@@ -7,20 +7,19 @@ import {
     loginHandler,
     updateUser,
     logout,
-} from  "../controllers/UserController.js";
+} from "../controllers/UserController.js";
+
 const router = express.Router();
 
-//endpoint authenticate
+// Auth routes
 router.post('/login', loginHandler);
 router.delete('/logout', logout);
 router.post('/register', createUser);
-//endpoint khusus verify token
+
+// RESTful user endpoints
 router.get('/users', getUsers);
 router.get('/users/:id', getUserById);
-router.delete('/delete-user/:id', deleteUser);
-router.put('/update-user/:id', updateUser);
+router.delete('/users/:id', deleteUser);    // ✅ Ganti jadi /users/:id
+router.put('/users/:id', updateUser);       // ✅ Ganti jadi /users/:id
 
 export default router;
-
-
-

@@ -9,10 +9,11 @@ import {
 
 const router = express.Router();
 
-router.get('/transaction', getTransaction);
-router.post('/add-transaction', addTransaction);
-router.put("/update-transaction/:id",updateTransaction);
-router.delete('/delete-transaction/:id', deleteTransaction);
-router.get('/transactions/:userId', getTransactionByUserId);
+// ✅ RESTful routes
+router.get('/transactions', getTransaction);                   // Get all
+router.post('/transactions', addTransaction);                  // Create
+router.put("/transactions/:id", updateTransaction);            // Update
+router.delete('/transactions/:id', deleteTransaction);         // Delete
+router.get('/transactions/user/:userId', getTransactionByUserId); // Filter by user
 
 export default router;
