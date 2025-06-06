@@ -108,96 +108,68 @@ async function deleteUser(req, res) {
 // Fungsi untuk login handler atau menangani login user
 async function loginHandler(req, res) {
     try {
-        const {email, password, role} = req.body;
-        const user = await User.findOne({
-            where :
-            {
-                email : email
-            }
-        });
+        const { email, password } = req.body;
 
-        if (user) {
-        //Data User itu nanti bakalan dipake buat ngesign token kan
-        // data user dari sequelize itu harus diubah dulu ke bentuk object
-        //Safeuserdata dipake biar lebih dinamis, jadi dia masukin semua data user kecuali data-data sensitifnya  karena bisa didecode kayak password caranya gini :
-            const userPlain = user.toJSON(); // Konversi ke object
-            const {password: _, refreshToken: __, ...safeUserData} = userPlain;
+        // Cari user berdasarkan email
+        const user = await User.findOne({ where: { email } });
 
-            //karena di db password dalam bentuk db, maka perlu di decrypt terlebih dahulu
-            const decryptPassword = await bcrypt.compare(password, user.password);
-            //decrypt password ini dikembalikan dalam bentuk bolean
-            if (decryptPassword) {
-                const accessToken = jwt.sign(safeUserData, process.env.ACCESS_TOKEN_SECRET, {
-                    expiresIn : '30s',
-                });
-                const refresh_token = jwt.sign(safeUserData,process.env.REFRESH_TOKEN_SECRET, {
-                    expiresIn : '1d',
-                });
-                //setelah membuat refresh token dan access token, maka kita update isi kolom resfresh token pada database
-                await User.update({refreshToken:refresh_token}, {
-                    where :
-                    {
-                        id: user.id,
-                    }
-                });
-
-                res.cookie('refreshToken', refresh_token, {
-                    httpOnly : false,
-                    sameSite : 'none',
-                    maxAge : 24*60*60*1000,
-                    secure : false,
-                });
-                res.status(200).json({
-                    status : "Success",
-                    message : "Login Berhasil",
-                    safeUserData,
-                    accessToken,
-                })
-            }
-            else {
-                res.status(400).json({
-                    status : 'failed',
-                    message : "Password atau email salah!",
-                });
-            }
-        } else {
-            res.status(400).json({
-                status : "Failed",
-                message : "Password atau email salah!",
-            })
+        if (!user) {
+            return res.status(400).json({
+                status: "Failed",
+                message: "Email atau password salah",
+            });
         }
+
+        // Konversi user dari Sequelize ke plain object
+        const userPlain = user.toJSON();
+
+        // Cek password (bcrypt compare)
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) {
+            return res.status(400).json({
+                status: "Failed",
+                message: "Email atau password salah",
+            });
+        }
+
+        // Ambil data user yang aman untuk dikirim ke frontend (tanpa password)
+        const { password: _, refreshToken: __, ...safeUserData } = userPlain;
+
+        // Kirim response sukses
+        return res.status(200).json({
+            status: "Success",
+            message: "Login berhasil",
+            user: safeUserData,
+        });
+
     } catch (error) {
-        res.status(error.statusCode || 500).json({
-            status : 'error',
-            message : error.message,
+        console.error(error);
+        return res.status(500).json({
+            status: "Error",
+            message: "Terjadi kesalahan saat login",
         });
     }
 }
 
+
+// Fungsi logout sederhana tanpa refresh token
 async function logout(req, res) {
-    try {
-        const refreshToken = req.cookies.refreshToken;
-        // mengecek refresh token sama atau tidak dengan di database
-        if(!refreshToken) return res.sendstatus(204);
-        const user = await User.findOne({
-            where : {
-                refreshToken : refreshToken,
-            }
-        });
+  try {
+    // Jika kamu masih menggunakan cookie (untuk session), kamu bisa hapus cookies di sini// Optional, kalau tidak dipakai bisa dihapus baris ini
 
-        if(!user.refreshToken) return res.sendstatus(204);
-
-        const userId = user.id;
-        await User.update({refreshToken:null}, {
-            where : {
-                id : userId
-            }
-        });
-        res.clearCookie('refreshToken'); // Menghapus cookie yang tersimpan
-        return res.sendstatus(200);
-    } catch (error) {
-        console.log(error);
-    }
+    return res.status(200).json({
+      status: 'success',
+      message: 'Logout berhasil',
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Terjadi kesalahan saat logout',
+    });
+  }
 }
+
 
 export {getUsers,getUserById,loginHandler,deleteUser,logout,updateUser,createUser}
