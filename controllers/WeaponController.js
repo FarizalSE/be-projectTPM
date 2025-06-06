@@ -1,5 +1,6 @@
 import Weapons from "../models/WeaponModel.js";
 import Transactions from "../models/TransactionModel.js";
+import { Op } from "sequelize";
 
 async function getWeapons(req, res) {
   try {
@@ -28,11 +29,34 @@ async function addWeapons(req, res) {
   try {
     const { name, type, serialNum, condition, location, stok } = req.body;
 
-    // Validasi sederhana, contoh cek name wajib ada
-    if (!name) {
-      return res.status(400).json({ msg: "Nama senjata wajib diisi" });
+    // Validasi dasar
+    if (!name || !type || !serialNum || !condition || !location || !stok) {
+      return res.status(400).json({ msg: "Semua field wajib diisi." });
     }
 
+    // Cek apakah senjata dengan semua field (kecuali id & waktu) sudah ada
+    const existingWeapon = await Weapons.findOne({
+      where: {
+        name,
+        type,
+        serialNum,
+        condition,
+        location,
+      },
+    });
+
+    if (existingWeapon) {
+      // Update hanya stok jika match semua field
+      const newStok = existingWeapon.stok + parseInt(stok);
+      await existingWeapon.update({ stok: newStok });
+
+      return res.status(200).json({
+        msg: "Data senjata sudah ada. Stok berhasil diperbarui.",
+        data: existingWeapon,
+      });
+    }
+
+    // Jika tidak ada match → Buat data baru
     const newWeapon = await Weapons.create({
       name,
       type,
@@ -43,7 +67,7 @@ async function addWeapons(req, res) {
     });
 
     res.status(201).json({
-      msg: "Data Senjata berhasil ditambahkan!",
+      msg: "Senjata baru berhasil ditambahkan!",
       data: newWeapon,
     });
   } catch (error) {
@@ -75,39 +99,64 @@ async function deleteWeapons(req, res) {
 async function updateWeapons(req, res) {
   try {
     const { name, type, serialNum, condition, location, stok } = req.body;
-    let updateData = {
+    const weaponId = req.params.id;
+
+    // Validasi dasar
+    if (!name || !type || !serialNum || !condition || !location || !stok) {
+      return res.status(400).json({ msg: "Semua field wajib diisi." });
+    }
+
+    const currentWeapon = await Weapons.findByPk(weaponId);
+
+    if (!currentWeapon) {
+      return res.status(404).json({ msg: "Senjata tidak ditemukan" });
+    }
+
+    // Cek apakah ada senjata lain (beda ID) dengan field yang sama (kecuali stok & id)
+    const existingWeapon = await Weapons.findOne({
+      where: {
+        name,
+        type,
+        serialNum,
+        condition,
+        location,
+        // Pastikan bukan senjata yang sedang diupdate
+        id: { [Op.ne]: weaponId }
+      },
+    });
+
+    if (existingWeapon) {
+      // Jika ada yang match → tambah stok ke existingWeapon & hapus yang sekarang
+      const updatedStok = existingWeapon.stok + parseInt(stok);
+      await existingWeapon.update({ stok: updatedStok });
+      await currentWeapon.destroy();
+
+      return res.status(200).json({
+        msg: "Field senjata cocok dengan data lain. Stok ditambahkan ke entri tersebut, entri ini dihapus.",
+        data: existingWeapon,
+      });
+    }
+
+    // Tidak ada yang cocok → update biasa
+    await currentWeapon.update({
       name,
       type,
       serialNum,
       condition,
       location,
       stok,
-    };
-
-    const [updatedRowsCount] = await Weapons.update(updateData, {
-      where: {
-        id: req.params.id,
-      },
     });
-
-    if (updatedRowsCount === 0) {
-      return res.status(404).json({
-        status: "Failed",
-        msg: "Update data tidak berhasil, data tidak ditemukan",
-      });
-    }
-
-    // Ambil data terbaru setelah update
-    const updatedWeapon = await Weapons.findByPk(req.params.id);
 
     res.status(200).json({
-      msg: "Data berhasil di Update",
-      data: updatedWeapon,
+      msg: "Data senjata berhasil diupdate",
+      data: currentWeapon,
     });
+
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ msg: "Terjadi kesalahan server" });
   }
 }
+
 
 export { getWeaponById, getWeapons, addWeapons, deleteWeapons, updateWeapons };
