@@ -8,8 +8,8 @@ const DB_USERNAME = process.env.DB_USERNAME;
 const DB_PASSWORD = process.env.DB_PASSWORD;
 
 //menyambungkan ke database
-const db = new Sequelize('gudangsenjata','root','',{
-    host : 'localhost',
+const db = new Sequelize(DB_NAME,DB_USERNAME,DB_PASSWORD,{
+    host : process.env.DB_HOST,
     dialect : "mysql"
 });
 

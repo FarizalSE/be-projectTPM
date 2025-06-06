@@ -10,6 +10,19 @@ async function getTransaction(req, res) {
     }
 }
 
+async function getTransactionByUserId(req, res) {
+    try {
+        const response = await Transactions.findOne({
+            where : {
+                userId : req.params.userId
+            }
+        });
+        res.status(200).json(response);
+    } catch (error) {
+        console.log(error.message);
+    }
+}
+
 async function getTransactionById(req, res) {
     try {
         const response = await Transactions.findOne({
@@ -35,6 +48,20 @@ async function addTransaction(req, res) {
             weaponId:weaponId,
         });
         res.status(200).json({msg:"Data Transaksi berhasil ditambahkan!"});
+    } catch (error) {
+        console.log(error.message);
+    }
+}
+
+async function deleteTransaction (req,res) {
+    try {
+        const targetTransaksi = req.params.id;
+        await Transactions.destroy({
+            where : {
+                id : targetTransaksi
+            }
+        });
+        res.status(200).json({msg:"Transaksi berhasil di delete!"});
     } catch (error) {
         console.log(error.message);
     }
@@ -71,4 +98,4 @@ async function updateTransaction(req, res) {
     }
 }
 
-export {getTransaction, addTransaction, updateTransaction, getTransactionById};
+export {getTransaction, addTransaction, updateTransaction, getTransactionById, deleteTransaction, getTransactionByUserId};

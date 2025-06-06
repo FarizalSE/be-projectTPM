@@ -2,17 +2,17 @@ import express from "express";
 import {
     getTransaction,
     addTransaction,
-    updateTransaction
+    updateTransaction,
+    deleteTransaction,
+    getTransactionByUserId
 } from "../controllers/TransactionController.js";
-import { verifyToken } from "../midleware/VerifyToken.js";
-import { refreshToken } from "../controllers/RefreshToken.js";
 
 const router = express.Router();
 
-router.get('/token', refreshToken);
-
-router.get('/transaction', verifyToken, getTransaction);
-router.post('/add-transaction', verifyToken, addTransaction);
-router.put("/update-transaction/:id", verifyToken, updateTransaction);
+router.get('/transaction', getTransaction);
+router.post('/add-transaction', addTransaction);
+router.put("/update-transaction/:id",updateTransaction);
+router.delete('/delete-transaction/:id', deleteTransaction);
+router.get('/transactions/:userId', getTransactionByUserId);
 
 export default router;
