@@ -4,10 +4,21 @@ import Weapons from "../models/WeaponModel.js";
 // GET all transactions
 async function getTransaction(req, res) {
   try {
-    const response = await Transactions.findAll();
+    const response = await Transactions.findAll({
+      include: [
+        {
+          model: Users,
+          attributes: ["id", "name"], // sesuaikan dengan kolom di model User
+        },
+        {
+          model: Weapons,
+          attributes: ["id", "serial_number", "name", "location"], // sesuaikan kolom di model Weapon
+        },
+      ],
+    });
     res.status(200).json(response);
   } catch (error) {
-    console.log(error.message);
+    console.error(error.message);
     res.status(500).json({ msg: "Terjadi kesalahan saat mengambil transaksi" });
   }
 }
