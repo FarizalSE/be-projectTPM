@@ -1,5 +1,6 @@
 import Transactions from "../models/TransactionModel.js";
 import Weapons from "../models/WeaponModel.js";
+import User from "../models/UserModel.js";
 
 // GET all transactions
 async function getTransaction(req, res) {
@@ -7,7 +8,7 @@ async function getTransaction(req, res) {
     const response = await Transactions.findAll({
       include: [
         {
-          model: Users,
+          model: User,
           attributes: ["id", "name"], // sesuaikan dengan kolom di model User
         },
         {
