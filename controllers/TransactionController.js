@@ -13,7 +13,7 @@ async function getTransaction(req, res) {
         },
         {
           model: Weapons,
-          attributes: ["id", "serialNum", "name", "location"], // sesuaikan kolom di model Weapon
+          attributes: ["id", "serialNum", "name", "location", "imageUrl"], // sesuaikan kolom di model Weapon
         },
       ],
     });

@@ -64,6 +64,7 @@ async function addWeapons(req, res) {
       condition,
       location,
       stok,
+      imageUrl,
     });
 
     res.status(201).json({
@@ -145,6 +146,7 @@ async function updateWeapons(req, res) {
       condition,
       location,
       stok,
+      imageUrl
     });
 
     res.status(200).json({
