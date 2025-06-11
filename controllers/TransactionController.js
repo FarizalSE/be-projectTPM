@@ -9,11 +9,11 @@ async function getTransaction(req, res) {
       include: [
         {
           model: User,
-          attributes: ["id", "name"], // sesuaikan dengan kolom di model User
+          attributes: ["id", "name"],
         },
         {
           model: Weapons,
-          attributes: ["id", "serialNum", "name", "location", "imageUrl"], // sesuaikan kolom di model Weapon
+          attributes: ["id", "serialNum", "name", "location", "imageUrl"],
         },
       ],
     });
@@ -31,6 +31,16 @@ async function getTransactionByUserId(req, res) {
       where: {
         userId: req.params.userId,
       },
+      include: [
+        {
+          model: User,
+          attributes: ["id", "name"],
+        },
+        {
+          model: Weapons,
+          attributes: ["id", "serialNum", "name", "location", "imageUrl"],
+        },
+      ],
     });
     res.status(200).json(response);
   } catch (error) {
@@ -54,7 +64,7 @@ async function getTransactionById(req, res) {
   }
 }
 
-// POST - Add transaction and update stok weapon
+// POST - Add transaction (stok hanya berubah jika status = 'approved')
 async function addTransaction(req, res) {
   try {
     const { type_transactions, amount, information, status, userId, weaponId } = req.body;
@@ -64,18 +74,20 @@ async function addTransaction(req, res) {
       return res.status(404).json({ msg: "Senjata tidak ditemukan" });
     }
 
-    let updatedStok = weapon.stok;
+    if (status === "approved") {
+      let updatedStok = weapon.stok;
 
-    if (type_transactions === "in") {
-      updatedStok += parseInt(amount);
-    } else if (type_transactions === "out") {
-      if (weapon.stok < amount) {
-        return res.status(400).json({ msg: "Stok senjata tidak mencukupi" });
+      if (type_transactions === "in") {
+        updatedStok += parseInt(amount);
+      } else if (type_transactions === "out") {
+        if (weapon.stok < amount) {
+          return res.status(400).json({ msg: "Stok senjata tidak mencukupi" });
+        }
+        updatedStok -= parseInt(amount);
       }
-      updatedStok -= parseInt(amount);
-    }
 
-    await weapon.update({ stok: updatedStok });
+      await weapon.update({ stok: updatedStok });
+    }
 
     await Transactions.create({
       type_transactions,
@@ -93,7 +105,7 @@ async function addTransaction(req, res) {
   }
 }
 
-// PUT - Update transaction and sync stok
+// PUT - Update transaction and sync stok only if approved
 async function updateTransaction(req, res) {
   try {
     const id = req.params.id;
@@ -111,26 +123,30 @@ async function updateTransaction(req, res) {
 
     let stok = weapon.stok;
 
-    // Rollback efek transaksi lama
-    if (oldTransaction.type_transactions === "in") {
-      stok -= oldTransaction.amount;
-    } else if (oldTransaction.type_transactions === "out") {
-      stok += oldTransaction.amount;
+    // Rollback stok jika status sebelumnya adalah 'approved'
+    if (oldTransaction.status === "approved") {
+      if (oldTransaction.type_transactions === "in") {
+        stok -= oldTransaction.amount;
+      } else if (oldTransaction.type_transactions === "out") {
+        stok += oldTransaction.amount;
+      }
     }
 
-    // Terapkan efek transaksi baru
-    if (type_transactions === "in") {
-      stok += parseInt(amount);
-    } else if (type_transactions === "out") {
-      if (stok < amount) {
-        return res.status(400).json({ msg: "Stok senjata tidak mencukupi untuk update transaksi" });
+    // Terapkan stok baru jika status sekarang adalah 'approved'
+    if (status === "approved") {
+      if (type_transactions === "in") {
+        stok += parseInt(amount);
+      } else if (type_transactions === "out") {
+        if (stok < amount) {
+          return res.status(400).json({ msg: "Stok senjata tidak mencukupi untuk update transaksi" });
+        }
+        stok -= parseInt(amount);
       }
-      stok -= parseInt(amount);
     }
 
     await weapon.update({ stok });
 
-    const result = await Transactions.update(
+    await Transactions.update(
       {
         type_transactions,
         amount,
@@ -142,14 +158,14 @@ async function updateTransaction(req, res) {
       }
     );
 
-    res.status(200).json({ msg: "Transaksi berhasil diupdate", updated: result });
+    res.status(200).json({ msg: "Transaksi berhasil diupdate" });
   } catch (error) {
     console.log(error.message);
     res.status(500).json({ msg: "Terjadi kesalahan server" });
   }
 }
 
-// DELETE - Delete transaction and rollback stok
+// DELETE - Delete transaction and rollback stok only if status was 'approved'
 async function deleteTransaction(req, res) {
   try {
     const id = req.params.id;
@@ -166,14 +182,15 @@ async function deleteTransaction(req, res) {
 
     let stok = weapon.stok;
 
-    // Rollback efek transaksi sebelum dihapus
-    if (transaksi.type_transactions === "in") {
-      stok -= transaksi.amount;
-    } else if (transaksi.type_transactions === "out") {
-      stok += transaksi.amount;
-    }
+    if (transaksi.status === "approved") {
+      if (transaksi.type_transactions === "in") {
+        stok -= transaksi.amount;
+      } else if (transaksi.type_transactions === "out") {
+        stok += transaksi.amount;
+      }
 
-    await weapon.update({ stok });
+      await weapon.update({ stok });
+    }
 
     await Transactions.destroy({
       where: { id },

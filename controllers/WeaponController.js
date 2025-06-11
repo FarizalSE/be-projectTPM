@@ -27,7 +27,7 @@ async function getWeaponById(req, res) {
 
 async function addWeapons(req, res) {
   try {
-    const { name, type, serialNum, condition, location, stok } = req.body;
+    const { name, type, serialNum, condition, location, stok, imageUrl } = req.body;
 
     // Validasi dasar
     if (!name || !type || !serialNum || !condition || !location || !stok) {
@@ -42,6 +42,7 @@ async function addWeapons(req, res) {
         serialNum,
         condition,
         location,
+        imageUrl,
       },
     });
 

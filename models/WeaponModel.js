@@ -20,5 +20,5 @@ const Weapons = db.define(
         timestamps : true,
     }
 );
-db.sync().then(() => console.log("Database synced"));
+db.sync({ alter: true }).then(() => console.log("Database synced"));
 export default Weapons;
