@@ -161,5 +161,36 @@ async function updateWeapons(req, res) {
   }
 }
 
+async function getSummary(req, res) {
+  try {
+    const totalWeapons = await Weapons.sum('stok');
 
-export { getWeaponById, getWeapons, addWeapons, deleteWeapons, updateWeapons };
+    const weaponsGoodCondition = await Weapons.count({
+      where: { condition: 'Good' },
+    });
+
+    const weaponsDamaged = await Weapons.count({
+      where: { condition: 'Bad' },
+    });
+
+    const uniqueLocations = await Weapons.findAll({
+      attributes: ['location'],
+      group: ['location'],
+    });
+    const totalWarehouses = uniqueLocations.length;
+
+    res.status(200).json({
+      totalWeapons,
+      weaponsGoodCondition,
+      weaponsDamaged,
+      totalWarehouses,
+    });
+  } catch (error) {
+    console.error('Error in getSummary:', error.message);
+    res.status(500).json({ msg: 'Gagal mengambil data ringkasan' });
+  }
+}
+
+
+
+export { getWeaponById, getWeapons, addWeapons, deleteWeapons, updateWeapons, getSummary };
