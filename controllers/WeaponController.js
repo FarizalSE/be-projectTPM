@@ -165,11 +165,11 @@ async function getSummary(req, res) {
   try {
     const totalWeapons = await Weapons.sum('stok');
 
-    const weaponsGoodCondition = await Weapons.count({
+    const weaponsGoodCondition = await Weapons.sum('stok',{
       where: { condition: 'Good' },
     });
 
-    const weaponsDamaged = await Weapons.count({
+    const weaponsDamaged = await Weapons.sum('stok',{
       where: { condition: 'Bad' },
     });
 
