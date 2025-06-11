@@ -13,6 +13,7 @@ const Weapons = db.define(
         condition : Sequelize.STRING,
         location : Sequelize.STRING,
         stok : Sequelize.INTEGER,
+        imageUrl : Sequelize.STRING,
     },
     {
         freezeTableName : true,
